@@ -239,7 +239,7 @@ export default struct WeatherIntegrationPage {
               Text('湿度')
                 .fontSize(12)
                 .fontColor('#8A8A8A')
-              Text(`${this.currentWeather.humidity}%`)
+              Text(`${this.currentWeather.humidity.toFixed(2)}%`)
                 .fontSize(16)
                 .fontWeight(FontWeight.Bold)
                 .fontColor('#1890FF')
