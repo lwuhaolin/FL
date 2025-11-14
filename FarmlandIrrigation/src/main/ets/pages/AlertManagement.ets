@@ -283,9 +283,22 @@ export default struct AlertManagement {
 
   // 标记报警为已处理
   markAlertResolved(alertId: string) {
-    const alert = this.alertRecords.find(item => item.id === alertId);
-    if (alert) {
-      alert.resolved = true;
+    const index = this.alertRecords.findIndex(item => item.id === alertId);
+    if (index !== -1) {
+      // 创建新数组以触发状态更新
+      const newRecords = [...this.alertRecords];
+      newRecords[index] = {
+        id: newRecords[index].id,
+        type: newRecords[index].type,
+        level: newRecords[index].level,
+        message: newRecords[index].message,
+        value: newRecords[index].value,
+        threshold: newRecords[index].threshold,
+        timestamp: newRecords[index].timestamp,
+        resolved: true
+      };
+      this.alertRecords = newRecords;
+
       console.info(`标记报警已处理 - 此处应更新数据库记录: ${alertId}`);
     }
   }
@@ -521,49 +534,116 @@ export default struct AlertManagement {
   }
 
   @Builder AlertRecordCard(record: AlertRecord) {
-    Row() {
-      Column({ space: 4 }) {
-        Text(record.message)
-          .fontSize(14)
-          .fontColor('#333333')
-          .textAlign(TextAlign.Start)
-        
-        Text(new Date(record.timestamp).toLocaleString())
-          .fontSize(12)
-          .fontColor('#999999')
-      }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Start)
+    Column({ space: 12 }) {
+      // 顶部信息行
+      Row() {
+        Column({ space: 4 }) {
+          Text(record.message)
+            .fontSize(14)
+            .fontWeight(FontWeight.Medium)
+            .fontColor('#333333')
+            .maxLines(2)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
 
-      Column({ space: 4 }) {
-        Text(record.level === AlertLevel.CRITICAL ? '紧急' : '警告')
+          Row({ space: 8 }) {
+            Text(new Date(record.timestamp).toLocaleString())
+              .fontSize(12)
+              .fontColor('#999999')
+
+            Text(`当前值：${record.value.toFixed(1)}`)
+              .fontSize(12)
+              .fontColor('#666666')
+          }
+        }
+        .layoutWeight(1)
+        .alignItems(HorizontalAlign.Start)
+
+        // 级别标签
+        Text(record.level === AlertLevel.CRITICAL ? '🔴 紧急' : '🟡 警告')
           .fontSize(12)
           .fontColor('#FFFFFF')
-          .padding({ left: 8, right: 8, top: 2, bottom: 2 })
+          .padding({ left: 10, right: 10, top: 4, bottom: 4 })
           .backgroundColor(record.level === AlertLevel.CRITICAL ? '#FF4D4F' : '#FA8C16')
-          .borderRadius(4)
-        
+          .borderRadius(12)
+      }
+      .width('100%')
+      .alignItems(VerticalAlign.Top)
+
+      // 分隔线
+      Divider()
+        .color('#F0F0F0')
+
+      // 底部操作区
+      Row() {
+        // 状态指示
+        Row({ space: 6 }) {
+          Circle({ width: 8, height: 8 })
+            .fill(record.resolved ? '#52C41A' : '#FF4D4F')
+
+          Text(record.resolved ? '已处理' : '待处理')
+            .fontSize(13)
+            .fontColor(record.resolved ? '#52C41A' : '#FF4D4F')
+            .fontWeight(FontWeight.Medium)
+        }
+
+        Blank()
+
+        // 操作按钮
         if (!record.resolved) {
-          Button('处理')
-            .fontSize(12)
-            .padding({ left: 12, right: 12, top: 4, bottom: 4 })
-            .backgroundColor('#007DFF')
-            .borderRadius(4)
-            .onClick(() => {
-              this.markAlertResolved(record.id);
-            })
+          Button() {
+            Row({ space: 6 }) {
+              Text('✓')
+                .fontSize(14)
+                .fontColor('#FFFFFF')
+              Text('标记已处理')
+                .fontSize(13)
+                .fontColor('#FFFFFF')
+            }
+          }
+          .backgroundColor('#1890FF')
+          .borderRadius(20)
+          .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+          .shadow({
+            radius: 6,
+            color: '#1890FF40',
+            offsetX: 0,
+            offsetY: 2
+          })
+          .onClick(() => {
+            this.markAlertResolved(record.id);
+          })
         } else {
-          Text('已处理')
-            .fontSize(12)
-            .fontColor('#52C41A')
+          Row({ space: 6 }) {
+            Text('✓')
+              .fontSize(14)
+              .fontColor('#52C41A')
+            Text('处理完成')
+              .fontSize(13)
+              .fontColor('#52C41A')
+              .fontWeight(FontWeight.Medium)
+          }
+          .padding({ left: 16, right: 16, top: 8, bottom: 8 })
+          .backgroundColor('#F6FFED')
+          .borderRadius(20)
+          .border({ width: 1, color: '#B7EB8F' })
         }
       }
-      .alignItems(HorizontalAlign.End)
+      .width('100%')
+      .alignItems(VerticalAlign.Center)
     }
     .width('100%')
-    .padding(12)
-    .backgroundColor('#F8F9FA')
-    .borderRadius(6)
-    .alignItems(VerticalAlign.Center)
+    .padding(16)
+    .backgroundColor('#FFFFFF')
+    .borderRadius(12)
+    .border({
+      width: 2,
+      color: record.resolved ? '#F0F0F0' : (record.level === AlertLevel.CRITICAL ? '#FFE7E7' : '#FFF7E6')
+    })
+    .shadow({
+      radius: record.resolved ? 4 : 8,
+      color: record.resolved ? '#00000008' : (record.level === AlertLevel.CRITICAL ? '#FF4D4F20' : '#FA8C1620'),
+      offsetX: 0,
+      offsetY: 2
+    })
   }
 }
